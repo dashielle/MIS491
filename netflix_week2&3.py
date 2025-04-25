@@ -97,7 +97,7 @@ plt.show()
 movies = df[df['type'] == 'Movie'].copy()  # Filter for movies only
 
 # Extract duration in minutes, handling NaNs
-movies['duration_minutes'] = pd.to_numeric(movies['duration'].str.extract('(\d+)', expand=False), errors='coerce').astype('Int64')
+movies['duration_minutes'] = pd.to_numeric(movies['duration'].str.extract(r'(\d+)', expand=False), errors='coerce').astype('Int64')
 
 # Group by genre and calculate average duration
 genre_duration = movies.groupby('listed_in')['duration_minutes'].mean().reset_index()
