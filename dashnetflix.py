@@ -198,5 +198,5 @@ plt.legend(title='Genre', bbox_to_anchor=(1.05, 1), loc='upper left')  # Place l
 plt.tight_layout()  # Adjust layout for better spacing
 
 # Display the plot
-st.pyplot(fig_genre_by_country))
+st.pyplot(fig_genre_by_country)
 
