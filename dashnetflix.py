@@ -160,3 +160,66 @@ ax9.set_title('Top 10 Genres by Top 5 Countries')
 ax9.set_ylabel('Number of Titles')
 ax9.legend(title='Genre', bbox_to_anchor=(1.05, 1), loc='upper left')
 st.pyplot(fig9)
+
+# --- Geographic Analysis with Interactive Map ---
+st.subheader('🌎 Geographic Distribution (Interactive Map)')
+
+# Prepare country coordinates
+# (We'll use pre-set centroids for countries — small approximation)
+
+# Load country centroids (latitude, longitude)
+# Here's a basic dictionary for top countries (for a full set, you can load a csv)
+country_lat_lon = {
+    'United States': [37.0902, -95.7129],
+    'India': [20.5937, 78.9629],
+    'United Kingdom': [55.3781, -3.4360],
+    'Canada': [56.1304, -106.3468],
+    'France': [46.2276, 2.2137],
+    'Japan': [36.2048, 138.2529],
+    'South Korea': [35.9078, 127.7669],
+    'Spain': [40.4637, -3.7492],
+    'Mexico': [23.6345, -102.5528],
+    'Australia': [-25.2744, 133.7751],
+    'Germany': [51.1657, 10.4515],
+    'Brazil': [-14.2350, -51.9253],
+    'Italy': [41.8719, 12.5674],
+    'Turkey': [38.9637, 35.2433],
+    'Other': [0, 0]  # Placeholder
+}
+
+# Prepare data for map
+map_data = []
+for country, count in top_countries[['country', 'count']].values:
+    if country in country_lat_lon:
+        lat, lon = country_lat_lon[country]
+        map_data.append({'country': country, 'count': count, 'lat': lat, 'lon': lon})
+
+map_df = pd.DataFrame(map_data)
+
+# Create pydeck layer
+layer = pdk.Layer(
+    'ScatterplotLayer',
+    data=map_df,
+    get_position='[lon, lat]',
+    get_color='[200, 30, 0, 160]',
+    get_radius='count * 5000',  # Adjust size based on count
+    pickable=True,
+    auto_highlight=True
+)
+
+# Set the view
+view_state = pdk.ViewState(
+    latitude=20,
+    longitude=0,
+    zoom=1.5,
+    pitch=0
+)
+
+# Render deck.gl map
+r = pdk.Deck(
+    layers=[layer],
+    initial_view_state=view_state,
+    tooltip={"text": "{country}: {count} Titles"}
+)
+
+st.pydeck_chart(r)
