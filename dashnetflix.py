@@ -98,7 +98,7 @@ st.pyplot(fig5)
 if selected_type in ['All', 'Movie']:
     st.subheader('Average Movie Duration by Genre (Top 10)')
     movies_filtered = filtered_df[filtered_df['type'] == 'Movie']
-    movies_filtered['duration_minutes'] = pd.to_numeric(movies_filtered['duration'].str.extract(r'(\d+)'), errors='coerce')
+    movies_filtered['duration_minutes'] = pd.to_numeric(movies_filtered['duration'].str.extract(\d+)'), errors='coerce')
 
     genre_duration = movies_filtered.groupby('listed_in')['duration_minutes'].mean().reset_index()
     genre_duration = genre_duration.sort_values(by='duration_minutes', ascending=False).head(10)
