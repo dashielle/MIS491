@@ -3,3 +3,4 @@ matplotlib
 seaborn
 textwrap3
 pydeck
+plotly.express
