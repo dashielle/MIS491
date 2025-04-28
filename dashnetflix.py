@@ -5,9 +5,10 @@ import plotly.express as px
 # Load data
 @st.cache_data
 def load_data():
-    df = pd.read_csv('/mnt/data/netflix_titles.csv')
+    df = pd.read_csv('netflix_titles.csv')  # <-- Corrected path
     df['date_added'] = pd.to_datetime(df['date_added'])
     return df
+
 
 df = load_data()
 
