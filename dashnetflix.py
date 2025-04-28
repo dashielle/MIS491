@@ -4,6 +4,7 @@ import seaborn as sns
 from collections import Counter
 import textwrap
 import streamlit as st
+import pydeck as pdk
 
 # Load and preprocess
 df = pd.read_csv('netflix_titles.csv')
@@ -11,187 +12,151 @@ df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce')
 df['year_added'] = df['date_added'].dt.year
 df['month_added'] = df['date_added'].dt.month
 
+# Split by type
 movies = df[df['type'] == 'Movie'].copy()
 tv_shows = df[df['type'] == 'TV Show'].copy()
 
-# Genre extractor
+# Helper to extract genres
 def extract_genres(genre_series):
     genres = genre_series.dropna().str.split(', ')
     return Counter([genre for sublist in genres for genre in sublist])
 
-# Setup for plots
-sns.set(style='whitegrid')
+# --- SIDEBAR ---
+st.sidebar.title("Filters")
 
-# 1. Content Breakdown
+# Year filter
+years = df['year_added'].dropna().astype(int).sort_values().unique()
+selected_year = st.sidebar.selectbox('Select Year', options=[None] + list(years))
 
-# Type count plot
-plt.figure(figsize=(6, 8))
-df['type'].value_counts().plot(kind='pie', autopct='%1.1f%%', colors=['#ff6f61', '#6b5b95' ], startangle=90)
-plt.title('Movies vs TV Shows')
-plt.ylabel('')  # Remove the ylabel for pie chart
-plt.tight_layout()
-st.pyplot(plt.gcf())
+# Content type filter
+content_types = ['All', 'Movie', 'TV Show']
+selected_type = st.sidebar.radio('Select Content Type', options=content_types)
 
+# Apply filters
+filtered_df = df.copy()
+if selected_year:
+    filtered_df = filtered_df[filtered_df['year_added'] == selected_year]
+if selected_type != 'All':
+    filtered_df = filtered_df[filtered_df['type'] == selected_type]
 
-# Genre plots
-movie_genres = extract_genres(movies['listed_in']).most_common(10)
-tv_genres = extract_genres(tv_shows['listed_in']).most_common(10)
+# --- PAGE TITLE ---
+st.title('🎬 Netflix Content Analysis Dashboard')
 
-# Movie genres
-plt.figure(figsize=(8, 4))
-sns.barplot(x=[genre for genre, _ in movie_genres],
-            y=[count for _, count in movie_genres],
-            color="#ff6f61")  # Specify color here
-plt.title('Top 10 Movie Genres')
-labels = [textwrap.fill(genre, 15) for genre, _ in movie_genres]
-plt.xticks(range(len(labels)), labels, rotation=90, ha='center')
-plt.tight_layout()
-st.pyplot(plt.gcf())
+# --- 1. Content Overview Section ---
+st.header('Content Breakdown')
 
-# Add space before the next plot
-plt.subplots_adjust(hspace=2.0)
+# Pie Chart: Movies vs TV Shows
+st.subheader('Movies vs TV Shows Distribution')
+type_counts = filtered_df['type'].value_counts()
+fig1, ax1 = plt.subplots(figsize=(6, 6))
+ax1.pie(type_counts, labels=type_counts.index, autopct='%1.1f%%', startangle=90, colors=['#ff6f61', '#6b5b95'])
+ax1.set_title('Movies vs TV Shows')
+st.pyplot(fig1)
 
-# TV show genres
-plt.figure(figsize=(8, 4))
-sns.barplot(x=[genre for genre, _ in tv_genres],
-            y=[count for _, count in tv_genres],
-            color= "#6b5b95")
-plt.title('Top 10 TV Show Genres')
-labels = [textwrap.fill(genre, 15) for genre, _ in tv_genres]
-plt.xticks(range(len(labels)), labels, rotation=90, ha='center')
-plt.tight_layout()
-st.pyplot(plt.gcf())
+# Top Genres
+st.subheader('Top Genres')
 
-# 1. Content Breakdown
+movie_genres = extract_genres(filtered_df[filtered_df['type'] == 'Movie']['listed_in']).most_common(10)
+tv_genres = extract_genres(filtered_df[filtered_df['type'] == 'TV Show']['listed_in']).most_common(10)
 
-# Ratings
-plt.figure(figsize=(8, 4))
-df['rating'].value_counts().head(10).plot(kind='bar', color='#88b04b')
-plt.title('Top 10 Ratings')
-plt.ylabel('Count')
-plt.tight_layout()
-st.pyplot(plt.gcf())
+col1, col2 = st.columns(2)
 
-# 2. Temporal Analysis
+with col1:
+    st.markdown("**Top 10 Movie Genres**")
+    fig2, ax2 = plt.subplots(figsize=(8, 4))
+    sns.barplot(x=[genre for genre, _ in movie_genres], y=[count for _, count in movie_genres], color="#ff6f61", ax=ax2)
+    ax2.set_xticklabels([textwrap.fill(genre, 15) for genre, _ in movie_genres], rotation=90)
+    st.pyplot(fig2)
 
-# Titles per year
-plt.figure(figsize=(10, 4))
-df['year_added'].value_counts().sort_index().plot(kind='line',  marker='o', markerfacecolor='blue', markeredgecolor='skyblue')
-plt.title('Titles Added Per Year')
-plt.xlabel('Year')
-plt.ylabel('Count')
-plt.tight_layout()
-st.pyplot(plt.gcf())
+with col2:
+    st.markdown("**Top 10 TV Show Genres**")
+    fig3, ax3 = plt.subplots(figsize=(8, 4))
+    sns.barplot(x=[genre for genre, _ in tv_genres], y=[count for _, count in tv_genres], color="#6b5b95", ax=ax3)
+    ax3.set_xticklabels([textwrap.fill(genre, 15) for genre, _ in tv_genres], rotation=90)
+    st.pyplot(fig3)
 
-# Load and preprocess
-df = pd.read_csv('netflix_titles.csv')  # Define 'df' here
-df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce')
-df['year_added'] = df['date_added'].dt.year
-df['month_added'] = df['date_added'].dt.month
+# Top Ratings
+st.subheader('Top Content Ratings')
+fig4, ax4 = plt.subplots(figsize=(10, 4))
+filtered_df['rating'].value_counts().head(10).plot(kind='bar', color='#88b04b', ax=ax4)
+ax4.set_ylabel('Count')
+ax4.set_title('Top 10 Ratings')
+st.pyplot(fig4)
 
-movies = df[df['type'] == 'Movie'].copy()  # Now 'df' is defined and accessible
-# ... (rest of your code) ...
+# --- 2. Temporal Analysis Section ---
+st.header('Temporal Trends')
 
-# Extract duration in minutes, handling NaNs
-movies['duration_minutes'] = pd.to_numeric(movies['duration'].str.extract(r'(\d+)', expand=False), errors='coerce').astype('Int64')
+st.subheader('Titles Added Over the Years')
+fig5, ax5 = plt.subplots(figsize=(12, 4))
+filtered_df['year_added'].value_counts().sort_index().plot(kind='line', marker='o', ax=ax5)
+ax5.set_xlabel('Year')
+ax5.set_ylabel('Number of Titles')
+ax5.set_title('Titles Added Per Year')
+st.pyplot(fig5)
 
+# Average Movie Duration by Genre
+if selected_type in ['All', 'Movie']:
+    st.subheader('Average Movie Duration by Genre (Top 10)')
+    movies_filtered = filtered_df[filtered_df['type'] == 'Movie']
+    movies_filtered['duration_minutes'] = pd.to_numeric(movies_filtered['duration'].str.extract(r'(\d+)'), errors='coerce')
 
-# Group by genre and calculate average duration
-genre_duration = movies.groupby('listed_in')['duration_minutes'].mean().reset_index()
+    genre_duration = movies_filtered.groupby('listed_in')['duration_minutes'].mean().reset_index()
+    genre_duration = genre_duration.sort_values(by='duration_minutes', ascending=False).head(10)
 
-# Sort by average duration and select top 10
-genre_duration = genre_duration.sort_values(by='duration_minutes', ascending=False).head(10)
+    fig6, ax6 = plt.subplots(figsize=(10, 6))
+    sns.lineplot(x='listed_in', y='duration_minutes', data=genre_duration, marker='o', ax=ax6)
+    ax6.set_xticklabels([textwrap.fill(label, 15) for label in genre_duration['listed_in']], rotation=90)
+    ax6.set_title('Average Duration by Genre')
+    st.pyplot(fig6)
 
-# Create the plot (Line graph)
-plt.figure(figsize=(10, 6))
-sns.lineplot(x='listed_in', y='duration_minutes', data=genre_duration, marker='o', markerfacecolor='blue', markeredgecolor='skyblue')
-plt.title('Average Movie Duration by Genre (Top 10)')
-plt.xlabel('Genre')
-plt.ylabel('Average Duration (minutes)')
-labels = [textwrap.fill(genre, 15) for genre in genre_duration['listed_in']]  # Wrap genre names
-plt.xticks(range(len(labels)), labels, rotation=90, ha='center')  # Set wrapped labels
-plt.tight_layout()
-st.pyplot(plt.gcf())
-genre_duration = movies.groupby('listed_in')['duration_minutes'].mean().reset_index()
+# --- 3. Geographic Analysis Section ---
+st.header('Geographic Analysis')
 
-# 3. Geographic Analysis
+st.subheader('Content Contribution by Country')
 
-# Count country appearances
-all_countries = Counter(
+# Country counts
+country_counts = Counter(
     country.strip()
-    for countries in df['country'].dropna().str.split(', ')
+    for countries in filtered_df['country'].dropna().str.split(', ')
     for country in countries
 )
 
-# Convert to DataFrame
-country_counts_df = pd.DataFrame(all_countries.items(), columns=['country', 'count'])
+country_counts_df = pd.DataFrame(country_counts.items(), columns=['country', 'count'])
 
-# Top 19 countries + combine others
-top_n = 19
-top_countries = country_counts_df.sort_values(by='count', ascending=False).head(top_n)
-other_count = country_counts_df['count'].sum() - top_countries['count'].sum()
+top_countries = country_counts_df.sort_values(by='count', ascending=False).head(20)
 
-# Add 'Other' slice
-top_countries = pd.concat([
-    top_countries,
-    pd.DataFrame([{'country': 'Other', 'count': other_count}])
-])
+fig7, ax7 = plt.subplots(figsize=(8, 8))
+ax7.pie(top_countries['count'], labels=top_countries['country'], autopct='%1.1f%%', startangle=75, colors=sns.color_palette('pastel'))
+ax7.set_title('Top 20 Countries by Content')
+st.pyplot(fig7)
 
-# Plot pie chart
-plt.figure(figsize=(8, 8))
-plt.pie(top_countries['count'], labels=top_countries['country'], autopct='%1.1f%%',
-        startangle=75, colors=sns.color_palette('pastel'))
-plt.title('Content Contribution by Country')
-plt.tight_layout()
-st.pyplot(plt.gcf())
+# Top Genres in the US
+st.subheader('Top Genres in the United States')
+us_genres = extract_genres(filtered_df[filtered_df['country'].str.contains('United States', na=False)]['listed_in']).most_common(10)
 
-# Country vs genre analysis (example: top genres in the US)
+fig8, ax8 = plt.subplots(figsize=(8, 4))
+sns.barplot(x=[genre for genre, _ in us_genres], y=[count for _, count in us_genres], color="lightblue", ax=ax8)
+ax8.set_xticklabels([textwrap.fill(label, 15) for label, _ in us_genres], rotation=90)
+ax8.set_title('Top 10 Genres in the US')
+st.pyplot(fig8)
 
-us_genres = extract_genres(df[df['country'] == 'United States']['listed_in']).most_common(10)
-plt.figure(figsize=(8, 4))
-sns.barplot(x=[genre for genre, _ in us_genres], y=[count for _, count in us_genres], color="lightblue")
-plt.title('Top 10 Genres in the US')
-labels = [textwrap.fill(genre, 15) for genre, _ in us_genres]
-plt.xticks(range(len(labels)), labels, rotation=90, ha='center')
-plt.tight_layout()
-st.pyplot(plt.gcf())
+# Top 5 Countries Genre Breakdown
+st.subheader('Top Genres by Top 5 Countries')
 
-# Assuming you have your data loaded in a DataFrame called 'df'
+top5_countries = country_counts_df.sort_values(by='count', ascending=False).head(5)['country']
+filtered_top5 = filtered_df[filtered_df['country'].apply(lambda x: any(c in x for c in top5_countries if isinstance(x, str)))]
 
-# Get the top 5 producing countries
-country_counts = Counter([country.strip() for sublist in df['country'].dropna().str.split(', ') for country in sublist])
-top_5_countries = [country for country, _ in country_counts.most_common(5)]
-
-# Filter the DataFrame for the top 5 countries
-filtered_df = df[df['country'].str.contains('|'.join(top_5_countries), na=False)]
-
-# Extract genres for each country
 genre_by_country = {}
-for country in top_5_countries:
-    genre_by_country[country] = extract_genres(filtered_df[filtered_df['country'].str.contains(country)]['listed_in'])
+for country in top5_countries:
+    genre_by_country[country] = extract_genres(filtered_top5[filtered_top5['country'].str.contains(country)]['listed_in'])
 
-# Convert the genre data to a DataFrame for plotting
-genre_by_country_df = pd.DataFrame(genre_by_country).fillna(0).T  # Transpose for plotting
-
-# Select the top 10 genres for better visualization
+genre_by_country_df = pd.DataFrame(genre_by_country).fillna(0).T
 top_10_genres = genre_by_country_df.sum().sort_values(ascending=False).head(10).index
 genre_by_country_df = genre_by_country_df[top_10_genres]
 
-# Create the plot
-ax = genre_by_country_df.plot(
-    kind='bar',
-    stacked=True,
-    figsize=(12, 6),
-    colormap='tab20'  # Choose a suitable colormap
-)
-
-# Customize the plot
-plt.title('Top 10 Genres by Top 5 Producing Countries (Stacked Column)')
-plt.xlabel('Country')
-plt.ylabel('Number of Titles')
-plt.xticks(rotation=0)  # Keep x-axis labels horizontal for better readability
-plt.legend(title='Genre', bbox_to_anchor=(1.05, 1), loc='upper left')  # Place legend outside the plot
-plt.tight_layout()  # Adjust layout for better spacing
-
-# Display the plot
-st.pyplot(plt.gcf())
+fig9, ax9 = plt.subplots(figsize=(12, 6))
+genre_by_country_df.plot(kind='bar', stacked=True, ax=ax9, colormap='tab20')
+ax9.set_title('Top 10 Genres by Top 5 Countries')
+ax9.set_ylabel('Number of Titles')
+ax9.legend(title='Genre', bbox_to_anchor=(1.05, 1), loc='upper left')
+st.pyplot(fig9)
