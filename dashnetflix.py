@@ -4,10 +4,12 @@ import plotly.express as px
 
 # Load data
 @st.cache_data
+@st.cache_data
 def load_data():
-    df = pd.read_csv('netflix_titles.csv')  # <-- Corrected path
-    df['date_added'] = pd.to_datetime(df['date_added'])
+    df = pd.read_csv('netflix_titles.csv')  # Correct path
+    df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce')  # Ignore invalid dates
     return df
+
 
 
 df = load_data()
