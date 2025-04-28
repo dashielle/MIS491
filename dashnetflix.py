@@ -4,6 +4,8 @@ import seaborn as sns
 from collections import Counter
 import streamlit as st
 import textwrap
+import pycountry
+import plotly.express as px
 
 # Maximize the whole screen
 st.set_page_config(layout="wide")
@@ -21,6 +23,14 @@ tv_shows = df[df['type'] == 'TV Show'].copy()
 def extract_genres(genre_series):
     genres = genre_series.dropna().str.split(', ')
     return Counter([genre for sublist in genres for genre in sublist])
+
+# Function to get alpha-3 country code
+def get_alpha3_code(country_name):
+    try:
+        country = pycountry.countries.search_fuzzy(country_name)[0]
+        return country.alpha_3
+    except LookupError:
+        return None
 
 # Setup for plots
 sns.set(style='whitegrid')
@@ -82,47 +92,49 @@ with col2:
     st.header("Geographical Analysis")
     st.subheader("Content Contribution by Country")
     # Count country appearances
-    all_countries = Counter(
+    country_counts = Counter(
         country.strip()
         for countries in df_filtered['country'].dropna().str.split(', ')
         for country in countries
     )
 
-    # Convert to DataFrame
-    country_counts_df = pd.DataFrame(all_countries.items(), columns=['country', 'count'])
+    country_df = pd.DataFrame(country_counts.items(), columns=['country', 'count'])
+    country_df['alpha_3'] = country_df['country'].apply(get_alpha3_code)
+    country_df = country_df.dropna(subset=['alpha_3'])
 
-    # Top N countries + combine others
-    top_n = 10
-    top_countries = country_counts_df.sort_values(by='count', ascending=False).head(top_n)
-    other_count = country_counts_df['count'].sum() - top_countries['count'].sum()
+    fig_map = px.choropleth(country_df,
+                            locations='alpha_3',
+                            color='count',
+                            hover_name='country',
+                            color_continuous_scale=px.colors.sequential.Plasma,
+                            title='Content Contribution by Country')
+    st.plotly_chart(fig_map)
 
-    # Add 'Other' slice
-    top_countries = pd.concat([
-        top_countries,
-        pd.DataFrame([{'country': 'Other', 'count': other_count}])
-    ])
-
-    # Plot pie chart
-    fig_country_pie, ax_country_pie = plt.subplots(figsize=(8, 8))
-    ax_country_pie.pie(top_countries['count'], labels=top_countries['country'], autopct='%1.1f%%',
-                        startangle=75, colors=sns.color_palette('pastel'))
-    ax_country_pie.set_title('Content Contribution by Country (Top {})'.format(top_n))
-    plt.tight_layout()
-    st.pyplot(fig_country_pie)
-
-    st.subheader("Top Genres in the United States")
-    us_data = df_filtered[df_filtered['country'].str.contains('United States', na=False)]
-    if not us_data.empty:
-        us_genres = extract_genres(us_data['listed_in']).most_common(10)
-        fig_us_genres, ax_us_genres = plt.subplots(figsize=(8, 5))
-        sns.barplot(x=[genre for genre, _ in us_genres], y=[count for _, count in us_genres], color="lightblue", ax=ax_us_genres)
-        ax_us_genres.set_title('Top 10 Genres in the US')
-        labels = [textwrap.fill(genre, 15) for genre, _ in us_genres]
-        ax_us_genres.set_xticklabels(labels, rotation=45, ha='right')
-        plt.tight_layout()
-        st.pyplot(fig_us_genres)
+    selected_country = st.session_state.get('selected_country')
+    if selected_country:
+        st.subheader(f"Top Genres in {selected_country}")
+        country_data = df_filtered[df_filtered['country'].str.contains(selected_country, na=False)]
+        if not country_data.empty:
+            country_genres = extract_genres(country_data['listed_in']).most_common(10)
+            fig_country_genres, ax_country_genres = plt.subplots(figsize=(8, 5))
+            sns.barplot(x=[genre for genre, _ in country_genres], y=[count for _, count in country_genres], color="skyblue", ax=ax_country_genres)
+            ax_country_genres.set_title(f'Top 10 Genres in {selected_country}')
+            labels = [textwrap.fill(genre, 15) for genre, _ in country_genres]
+            ax_country_genres.set_xticklabels(labels, rotation=45, ha='right')
+            plt.tight_layout()
+            st.pyplot(fig_country_genres)
+        else:
+            st.info(f"No genre data available for {selected_country} in the selected year.")
     else:
-        st.info("No data available for the United States in the selected year.")
+        st.info("Click on a country on the map to see its top genres.")
+
+    def handle_country_click(event):
+        if event['points']:
+            clicked_country = event['points'][0]['hovertext']
+            st.session_state['selected_country'] = clicked_country
+
+    fig_map.update_geos(fitbounds="locations", visible=False)
+    fig_map.data[0].on_click(handle_country_click)
 
 # Column 3: Temporal Analysis and Ratings
 with col3:
