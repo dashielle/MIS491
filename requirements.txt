@@ -4,3 +4,5 @@ seaborn
 textwrap3
 pydeck
 plotly.express
+pycountry
+plotly.express
