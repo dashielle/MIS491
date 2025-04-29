@@ -126,7 +126,7 @@ all_countries = Counter(
     country.strip()
     for countries in df_filtered['country'].dropna().str.split(', ')
     for country in countries
-)
+
 
 # Convert to DataFrame
 country_counts_df = pd.DataFrame(all_countries.items(), columns=['country', 'count'])
