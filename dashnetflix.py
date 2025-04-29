@@ -53,7 +53,7 @@ with col1:
     ax_type.set_ylabel('')
     st.pyplot(fig_type)
 
-st.subheader("Titles Added Per Year")
+    st.subheader("Titles Added Per Year")
     fig_year_added, ax_year_added = plt.subplots(figsize=(10, 5))
     df_filtered['year_added'].value_counts().sort_index().plot(kind='line',  marker='o', markerfacecolor='blue', markeredgecolor='skyblue', ax=ax_year_added)
     ax_year_added.set_title('Titles Added Per Year')
