@@ -4,6 +4,8 @@ import seaborn as sns
 from collections import Counter
 import streamlit as st
 import textwrap
+import pycountry
+import plotly.express as px
 
 # Maximize the whole screen
 st.set_page_config(layout="wide")
@@ -109,6 +111,37 @@ with col2:
     ax_country_pie.set_title('Content Contribution by Country (Top {})'.format(top_n))
     plt.tight_layout()
     st.pyplot(fig_country_pie)
+
+
+    def get_alpha3_code(country_name):
+    try:
+        country = pycountry.countries.search_fuzzy(country_name)[0]
+        return country.alpha_3
+    except LookupError:
+        return None
+
+st.subheader("Content Contribution by Country")
+# Count country appearances
+all_countries = Counter(
+    country.strip()
+    for countries in df_filtered['country'].dropna().str.split(', ')
+    for country in countries
+)
+
+# Convert to DataFrame
+country_counts_df = pd.DataFrame(all_countries.items(), columns=['country', 'count'])
+country_counts_df['alpha_3'] = country_counts_df['country'].apply(get_alpha3_code)
+country_counts_df = country_counts_df.dropna(subset=['alpha_3'])
+
+fig_map = px.choropleth(country_counts_df,
+                        locations='alpha_3',
+                        color='count',
+                        hover_name='country',
+                        color_continuous_scale=px.colors.sequential.Plasma,
+                        title='Content Contribution by Country',
+                        labels={'count': 'Number of Titles'},
+                        projection='natural earth')
+st.plotly_chart(fig_map)
 
     st.subheader("Top Genres in the United States")
     us_data = df_filtered[df_filtered['country'].str.contains('United States', na=False)]
