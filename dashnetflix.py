@@ -41,7 +41,7 @@ else:
     tv_shows_filtered = tv_shows
 
 # --- Main Layout with Columns ---
-col1, col2, col3 = st.columns([1, 1, 1])
+col1, col2, col3 = st.columns([1, 1.5, 1])
 
 # Column 1: Content Breakdown and Genre
 with col1:
