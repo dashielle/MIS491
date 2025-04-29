@@ -6,7 +6,7 @@ import streamlit as st
 import textwrap
 
 # Maximize the whole screen
-st.set_page_config(layout="wide")
+
 
 # Load and preprocess
 df = pd.read_csv('netflix_titles.csv')
