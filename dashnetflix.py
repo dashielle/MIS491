@@ -4,12 +4,19 @@ import seaborn as sns
 from collections import Counter
 import streamlit as st
 import textwrap
+import os
 
-# Maximize the whole screen
-st.set_page_config(layout="wide")
+# Print current working directory for debugging
+print("Current Working Directory:", os.getcwd())
 
-# Load and preprocess
-df = pd.read_csv('netflix_titles.csv')
+# Try reading the CSV file (adjust the path if necessary)
+try:
+    df = pd.read_csv('netflix_titles.csv')
+except FileNotFoundError:
+    print("Error: netflix_titles.csv not found. Please ensure the file is in the correct directory or provide the full path.")
+    st.error("Error: netflix_titles.csv not found. Please check the file path.")
+    st.stop() # Stop the Streamlit app if the file is not found
+
 df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce')
 df['year_added'] = df['date_added'].dt.year
 df['month_added'] = df['date_added'].dt.month
