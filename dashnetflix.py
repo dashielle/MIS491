@@ -5,9 +5,6 @@ from collections import Counter
 import streamlit as st
 import textwrap
 
-# Maximize the whole screen
-
-
 # Load and preprocess
 df = pd.read_csv('netflix_titles.csv')
 df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce')
@@ -41,7 +38,7 @@ else:
     tv_shows_filtered = tv_shows
 
 # --- Main Layout with Columns ---
-col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns([.5, 1])
 
 # Column 1: Content Breakdown and Genre
 with col1:
