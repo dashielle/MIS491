@@ -5,6 +5,9 @@ from collections import Counter
 import streamlit as st
 import textwrap
 
+# Maximize the whole screen
+st.set_page_config(layout="wide")
+
 # Load and preprocess
 df = pd.read_csv('netflix_titles.csv')
 df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce')
@@ -37,14 +40,12 @@ else:
     movies_filtered = movies
     tv_shows_filtered = tv_shows
 
-# Maximize the whole screen
-st.set_page_config(layout="wide")
 # --- Main Layout with Columns ---
-col1, col2 = st.columns([1, 1.5])
+col1, col2, col3 = st.columns([1, 1, 1])
 
 # Column 1: Content Breakdown and Genre
 with col1:
-    st.header("Content Breakdown & Analysis")
+    st.header("Content Breakdown & Genre")
     st.subheader("Type Breakdown")
     fig_type, ax_type = plt.subplots(figsize=(6, 6))
     df_filtered['type'].value_counts().plot(kind='pie', autopct='%1.1f%%', colors=['#ff6f61', '#6b5b95' ], startangle=90, ax=ax_type)
@@ -52,44 +53,30 @@ with col1:
     ax_type.set_ylabel('')
     st.pyplot(fig_type)
 
-    st.subheader("Titles Added Per Year")
-    fig_year_added, ax_year_added = plt.subplots(figsize=(10, 5))
-    df_filtered['year_added'].value_counts().sort_index().plot(kind='line',  marker='o', markerfacecolor='blue', markeredgecolor='skyblue', ax=ax_year_added)
-    ax_year_added.set_title('Titles Added Per Year')
-    ax_year_added.set_xlabel('Year')
-    ax_year_added.set_ylabel('Count')
+    st.subheader("Top Movie Genres")
+    movie_genres = extract_genres(movies_filtered['listed_in']).most_common(10)
+    fig_movie_genres, ax_movie_genres = plt.subplots(figsize=(8, 5))
+    sns.barplot(x=[genre for genre, _ in movie_genres],
+                y=[count for _, count in movie_genres],
+                color="#ff6f61", ax=ax_movie_genres)
+    ax_movie_genres.set_title('Top 10 Movie Genres')
+    labels = [textwrap.fill(genre, 15) for genre, _ in movie_genres]
+    ax_movie_genres.set_xticklabels(labels, rotation=45, ha='right')
     plt.tight_layout()
-    st.pyplot(fig_year_added)
+    st.pyplot(fig_movie_genres)
 
-    # Extract duration in minutes, handling NaNs
-    movies_filtered['duration_minutes'] = pd.to_numeric(movies_filtered['duration'].str.extract(r'(\d+)', expand=False), errors='coerce').astype('Int64')
-
-    # Group by genre and calculate average duration
-    genre_duration = movies_filtered.groupby('listed_in')['duration_minutes'].mean().reset_index()
-
-    # Sort by average duration and select top 5 for better visibility in a column
-    genre_duration = genre_duration.sort_values(by='duration_minutes', ascending=False).head(5)
-
-    st.subheader("Avg Movie Duration by Genre (Top 5)")
-    fig_duration, ax_duration = plt.subplots(figsize=(8, 5))
-    sns.barplot(x='listed_in', y='duration_minutes', data=genre_duration, color='orange', ax=ax_duration)
-    ax_duration.set_title('Avg Movie Duration by Genre (Top 5)')
-    ax_duration.set_xlabel('Genre')
-    ax_duration.set_ylabel('Average Duration (minutes)')
-    labels = [textwrap.fill(genre, 10) for genre in genre_duration['listed_in']]
-    ax_duration.set_xticklabels(labels, rotation=45, ha='right')
+    st.subheader("Top TV Show Genres")
+    tv_genres = extract_genres(tv_shows_filtered['listed_in']).most_common(10)
+    fig_tv_genres, ax_tv_genres = plt.subplots(figsize=(8, 5))
+    sns.barplot(x=[genre for genre, _ in tv_genres],
+                y=[count for _, count in tv_genres],
+                color= "#6b5b95", ax=ax_tv_genres)
+    ax_tv_genres.set_title('Top 10 TV Show Genres')
+    labels = [textwrap.fill(genre, 15) for genre, _ in tv_genres]
+    ax_tv_genres.set_xticklabels(labels, rotation=45, ha='right')
     plt.tight_layout()
-    st.pyplot(fig_duration)
+    st.pyplot(fig_tv_genres)
 
-    st.subheader("Top Content Ratings")
-    fig_ratings, ax_ratings = plt.subplots(figsize=(8, 5))
-    df_filtered['rating'].value_counts().head(10).plot(kind='bar', color='#88b04b', ax=ax_ratings)
-    ax_ratings.set_title('Top 10 Ratings')
-    ax_ratings.set_ylabel('Count')
-    plt.tight_layout()
-    st.pyplot(fig_ratings)
-
-    
 # Column 2: Geographical Analysis
 with col2:
     st.header("Geographical Analysis")
@@ -137,29 +124,42 @@ with col2:
     else:
         st.info("No data available for the United States in the selected year.")
 
-    st.subheader("Top Movie Genres")
-    movie_genres = extract_genres(movies_filtered['listed_in']).most_common(10)
-    fig_movie_genres, ax_movie_genres = plt.subplots(figsize=(8, 5))
-    sns.barplot(x=[genre for genre, _ in movie_genres],
-                y=[count for _, count in movie_genres],
-                color="#ff6f61", ax=ax_movie_genres)
-    ax_movie_genres.set_title('Top 10 Movie Genres')
-    labels = [textwrap.fill(genre, 15) for genre, _ in movie_genres]
-    ax_movie_genres.set_xticklabels(labels, rotation=45, ha='right')
+# Column 3: Temporal Analysis and Ratings
+with col3:
+    st.header("Analysis & Ratings")
+    st.subheader("Titles Added Per Year")
+    fig_year_added, ax_year_added = plt.subplots(figsize=(10, 5))
+    df_filtered['year_added'].value_counts().sort_index().plot(kind='line',  marker='o', markerfacecolor='blue', markeredgecolor='skyblue', ax=ax_year_added)
+    ax_year_added.set_title('Titles Added Per Year')
+    ax_year_added.set_xlabel('Year')
+    ax_year_added.set_ylabel('Count')
     plt.tight_layout()
-    st.pyplot(fig_movie_genres)
+    st.pyplot(fig_year_added)
 
-    st.subheader("Top TV Show Genres")
-    tv_genres = extract_genres(tv_shows_filtered['listed_in']).most_common(10)
-    fig_tv_genres, ax_tv_genres = plt.subplots(figsize=(8, 5))
-    sns.barplot(x=[genre for genre, _ in tv_genres],
-                y=[count for _, count in tv_genres],
-                color= "#6b5b95", ax=ax_tv_genres)
-    ax_tv_genres.set_title('Top 10 TV Show Genres')
-    labels = [textwrap.fill(genre, 15) for genre, _ in tv_genres]
-    ax_tv_genres.set_xticklabels(labels, rotation=45, ha='right')
+    # Extract duration in minutes, handling NaNs
+    movies_filtered['duration_minutes'] = pd.to_numeric(movies_filtered['duration'].str.extract(r'(\d+)', expand=False), errors='coerce').astype('Int64')
+
+    # Group by genre and calculate average duration
+    genre_duration = movies_filtered.groupby('listed_in')['duration_minutes'].mean().reset_index()
+
+    # Sort by average duration and select top 5 for better visibility in a column
+    genre_duration = genre_duration.sort_values(by='duration_minutes', ascending=False).head(5)
+
+    st.subheader("Avg Movie Duration by Genre (Top 5)")
+    fig_duration, ax_duration = plt.subplots(figsize=(8, 5))
+    sns.barplot(x='listed_in', y='duration_minutes', data=genre_duration, color='orange', ax=ax_duration)
+    ax_duration.set_title('Avg Movie Duration by Genre (Top 5)')
+    ax_duration.set_xlabel('Genre')
+    ax_duration.set_ylabel('Average Duration (minutes)')
+    labels = [textwrap.fill(genre, 10) for genre in genre_duration['listed_in']]
+    ax_duration.set_xticklabels(labels, rotation=45, ha='right')
     plt.tight_layout()
-    st.pyplot(fig_tv_genres)
+    st.pyplot(fig_duration)
 
-
-    
+    st.subheader("Top Content Ratings")
+    fig_ratings, ax_ratings = plt.subplots(figsize=(8, 5))
+    df_filtered['rating'].value_counts().head(10).plot(kind='bar', color='#88b04b', ax=ax_ratings)
+    ax_ratings.set_title('Top 10 Ratings')
+    ax_ratings.set_ylabel('Count')
+    plt.tight_layout()
+    st.pyplot(fig_ratings)
