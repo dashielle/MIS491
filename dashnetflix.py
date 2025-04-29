@@ -37,6 +37,8 @@ else:
     movies_filtered = movies
     tv_shows_filtered = tv_shows
 
+# Maximize the whole screen
+st.set_page_config(layout="wide")
 # --- Main Layout with Columns ---
 col1, col2 = st.columns([1, 1.5])
 
