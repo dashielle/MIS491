@@ -51,7 +51,7 @@ else:
     tv_shows_filtered = tv_shows
 
 # --- Main Layout with Columns ---
-col1, col2, col3 = st.columns([1, 1, 1])
+col = st.columns((1.5, 4.5, 2), gap='medium')
 
 # Column 1: Content Breakdown and Genre
 with col1:
@@ -90,7 +90,6 @@ with col1:
 # Column 2: Geographical Analysis
 # --- Main Layout with Columns ---
 st.header("Geographical Analysis")
-col_map, col_genres = st.columns([2, 3])
 
 with col_map:
     st.subheader("Content Contribution by Country")
