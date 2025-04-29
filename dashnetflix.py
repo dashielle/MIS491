@@ -138,7 +138,7 @@ with col2:
     else:
         st.info("No data available for the United States in the selected year.")
 
-st.subheader("Top Movie Genres")
+    st.subheader("Top Movie Genres")
     movie_genres = extract_genres(movies_filtered['listed_in']).most_common(10)
     fig_movie_genres, ax_movie_genres = plt.subplots(figsize=(8, 5))
     sns.barplot(x=[genre for genre, _ in movie_genres],
