@@ -126,7 +126,7 @@ with col2:
 
 # Column 3: Temporal Analysis and Ratings
 with col3:
-    st.header("Temporal Analysis & Ratings")
+    st.header("Analysis & Ratings")
     st.subheader("Titles Added Per Year")
     fig_year_added, ax_year_added = plt.subplots(figsize=(10, 5))
     df_filtered['year_added'].value_counts().sort_index().plot(kind='line',  marker='o', markerfacecolor='blue', markeredgecolor='skyblue', ax=ax_year_added)
