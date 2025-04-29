@@ -24,6 +24,14 @@ def extract_genres(genre_series):
     genres = genre_series.dropna().str.split(', ')
     return Counter([genre for sublist in genres for genre in sublist])
 
+# Function to get alpha-3 country code
+def get_alpha3_code(country_name):
+    try:
+        country = pycountry.countries.search_fuzzy(country_name)[0]
+        return country.alpha_3
+    except LookupError:
+        return None
+
 # Setup for plots
 sns.set(style='whitegrid')
 
@@ -93,55 +101,19 @@ with col2:
     # Convert to DataFrame
     country_counts_df = pd.DataFrame(all_countries.items(), columns=['country', 'count'])
 
-    # Top N countries + combine others
-    top_n = 10
-    top_countries = country_counts_df.sort_values(by='count', ascending=False).head(top_n)
-    other_count = country_counts_df['count'].sum() - top_countries['count'].sum()
+    # Get alpha-3 codes for mapping
+    country_counts_df['alpha_3'] = country_counts_df['country'].apply(get_alpha3_code)
+    country_counts_df = country_counts_df.dropna(subset=['alpha_3'])
 
-    # Add 'Other' slice
-    top_countries = pd.concat([
-        top_countries,
-        pd.DataFrame([{'country': 'Other', 'count': other_count}])
-    ])
-
-    # Plot pie chart
-    fig_country_pie, ax_country_pie = plt.subplots(figsize=(8, 8))
-    ax_country_pie.pie(top_countries['count'], labels=top_countries['country'], autopct='%1.1f%%',
-                        startangle=75, colors=sns.color_palette('pastel'))
-    ax_country_pie.set_title('Content Contribution by Country (Top {})'.format(top_n))
-    plt.tight_layout()
-    st.pyplot(fig_country_pie)
-
-
-    def get_alpha3_code(country_name):
-    try:
-        country = pycountry.countries.search_fuzzy(country_name)[0]
-        return country.alpha_3
-    except LookupError:
-        return None
-
-st.subheader("Content Contribution by Country")
-# Count country appearances
-all_countries = Counter(
-    country.strip()
-    for countries in df_filtered['country'].dropna().str.split(', ')
-    for country in countries
-
-
-# Convert to DataFrame
-country_counts_df = pd.DataFrame(all_countries.items(), columns=['country', 'count'])
-country_counts_df['alpha_3'] = country_counts_df['country'].apply(get_alpha3_code)
-country_counts_df = country_counts_df.dropna(subset=['alpha_3'])
-
-fig_map = px.choropleth(country_counts_df,
-                        locations='alpha_3',
-                        color='count',
-                        hover_name='country',
-                        color_continuous_scale=px.colors.sequential.Plasma,
-                        title='Content Contribution by Country',
-                        labels={'count': 'Number of Titles'},
-                        projection='natural earth')
-st.plotly_chart(fig_map)
+    fig_map = px.choropleth(country_counts_df,
+                            locations='alpha_3',
+                            color='count',
+                            hover_name='country',
+                            color_continuous_scale=px.colors.sequential.Plasma,
+                            title='Content Contribution by Country',
+                            labels={'count': 'Number of Titles'},
+                            projection='natural earth')
+    st.plotly_chart(fig_map)
 
     st.subheader("Top Genres in the United States")
     us_data = df_filtered[df_filtered['country'].str.contains('United States', na=False)]
