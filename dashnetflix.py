@@ -107,7 +107,8 @@ with col2:
                             color='count',
                             hover_name='country',
                             color_continuous_scale=px.colors.sequential.Plasma,
-                            title='Content Contribution by Country')
+                            title='Content Contribution by Country',
+                            labels={'count': 'Number of Titles'})  # Add legend label
     st.plotly_chart(fig_map)
 
     selected_country = st.session_state.get('selected_country')
