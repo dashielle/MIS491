@@ -172,49 +172,7 @@ with col_genres:
     else:
         st.info("Click on a country on the map to see its top TV show and movie genres.")
 
-# --- Remaining Columns ---
-col_temp, col_ratings = st.columns(2)
 
-with col_temp:
-    st.header("Temporal Analysis")
-    st.subheader("Titles Added Per Year")
-    fig_year_added, ax_year_added = plt.subplots(figsize=(10, 5))
-    df_filtered['year_added'].value_counts().sort_index().plot(kind='line',  marker='o', markerfacecolor='blue', markeredgecolor='skyblue', ax=ax_year_added)
-    ax_year_added.set_title('Titles Added Per Year')
-    ax_year_added.set_xlabel('Year')
-    ax_year_added.set_ylabel('Count')
-    plt.tight_layout()
-    st.pyplot(fig_year_added)
-
-    # Extract duration in minutes, handling NaNs
-    movies_filtered['duration_minutes'] = pd.to_numeric(movies_filtered['duration'].str.extract(r'(\d+)', expand=False), errors='coerce').astype('Int64')
-
-    # Group by genre and calculate average duration
-    genre_duration = movies_filtered.groupby('listed_in')['duration_minutes'].mean().reset_index()
-
-    # Sort by average duration and select top 5 for better visibility in a column
-    genre_duration = genre_duration.sort_values(by='duration_minutes', ascending=False).head(5)
-
-    st.subheader("Avg Movie Duration by Genre (Top 5)")
-    fig_duration, ax_duration = plt.subplots(figsize=(8, 5))
-    sns.barplot(x='listed_in', y='duration_minutes', data=genre_duration, color='orange', ax=ax_duration)
-    ax_duration.set_title('Avg Movie Duration by Genre (Top 5)')
-    ax_duration.set_xlabel('Genre')
-    ax_duration.set_ylabel('Average Duration (minutes)')
-    labels = [textwrap.fill(genre, 10) for genre in genre_duration['listed_in']]
-    ax_duration.set_xticklabels(labels, rotation=45, ha='right')
-    plt.tight_layout()
-    st.pyplot(fig_duration)
-
-with col_ratings:
-    st.header("Ratings Analysis")
-    st.subheader("Top Content Ratings")
-    fig_ratings, ax_ratings = plt.subplots(figsize=(8, 5))
-    df_filtered['rating'].value_counts().head(10).plot(kind='bar', color='#88b04b', ax=ax_ratings)
-    ax_ratings.set_title('Top 10 Ratings')
-    ax_ratings.set_ylabel('Count')
-    plt.tight_layout()
-    st.pyplot(fig_ratings)
 # Column 3: Temporal Analysis and Ratings
 with col3:
     st.header("Temporal Analysis & Ratings")
