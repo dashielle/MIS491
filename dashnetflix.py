@@ -18,7 +18,7 @@ st.title("Netflix Content Analysis")
 
 # Load and preprocess data
 df = pd.read_csv('/mount/src/mis491/netflix_titles.csv')
-df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce') # or errors='coerce' if you prefer to handle error by dropping
+df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce')
 df['year_added'] = df['date_added'].dt.year
 df['month_added'] = df['date_added'].dt.month
 
@@ -39,9 +39,9 @@ def get_alpha3_code(country_name):
 sns.set(style='whitegrid')
 
 # Sidebar filter
-st.sidebar.header("Filter by Year")
-all_years = sorted(df['year_added'].dropna().astype(int).unique(), reverse=True) # Fix here
-selected_year = st.sidebar.selectbox("Select Year", ["All"] + list(all_years)) # Fix here
+st.sidebar.header("Release year")
+all_years = sorted(df['year_added'].dropna().astype(int).unique(), reverse=True)
+selected_year = st.sidebar.selectbox("Select Year", ["All"] + list(all_years))
 
 
 # Filter data based on selected year
