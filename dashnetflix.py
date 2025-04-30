@@ -17,7 +17,7 @@ st.title("Netflix Content Analysis")
 
 
 # Load and preprocess data
-df = pd.read_csv('netflix_titles.csv')
+df = pd.read_csv('/mount/src/mis491/netflix_titles.csv')
 df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce') # or errors='coerce' if you prefer to handle error by dropping
 df['year_added'] = df['date_added'].dt.year
 df['month_added'] = df['date_added'].dt.month
