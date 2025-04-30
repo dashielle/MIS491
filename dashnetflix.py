@@ -1,25 +1,29 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from collections import Counter
+%%writefile streamlit_app.py
 import streamlit as st
-import textwrap
-import pycountry
-import plotly.express as px
 
 # Maximize the whole screen
 st.set_page_config(layout="wide")
 
-# Load and preprocess
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from collections import Counter
+import textwrap
+import pycountry
+import plotly.express as px
+
+# Add the title at the beginning of your script
+st.title("Netflix Content Analysis") 
+
+
+# Load and preprocess data
 df = pd.read_csv('netflix_titles.csv')
-df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce')
+df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce') # or errors='coerce' if you prefer to handle error by dropping
 df['year_added'] = df['date_added'].dt.year
 df['month_added'] = df['date_added'].dt.month
 
-movies = df[df['type'] == 'Movie'].copy()
-tv_shows = df[df['type'] == 'TV Show'].copy()
-
-# Genre extractor
+# Genre extractor function
 def extract_genres(genre_series):
     genres = genre_series.dropna().str.split(', ')
     return Counter([genre for sublist in genres for genre in sublist])
@@ -35,20 +39,21 @@ def get_alpha3_code(country_name):
 # Setup for plots
 sns.set(style='whitegrid')
 
-# Sidebar for year selection
+# Sidebar filter
 st.sidebar.header("Filter by Year")
-years = sorted(df['year_added'].dropna().unique().astype(int), reverse=True)
-selected_year = st.sidebar.selectbox("Select Year", ["All"] + list(years))
+all_years = sorted(df['year_added'].dropna().astype(int).unique(), reverse=True) # Fix here
+selected_year = st.sidebar.selectbox("Select Year", ["All"] + list(all_years)) # Fix here
 
-# Filter DataFrame based on selected year
+
+# Filter data based on selected year
 if selected_year != "All":
     df_filtered = df[df['year_added'] == selected_year]
-    movies_filtered = movies[movies['year_added'] == selected_year]
-    tv_shows_filtered = tv_shows[tv_shows['year_added'] == selected_year]
 else:
     df_filtered = df
-    movies_filtered = movies
-    tv_shows_filtered = tv_shows
+
+# Filter movies and TV shows
+movies_filtered = df_filtered[df_filtered['type'] == 'Movie']
+tv_shows_filtered = df_filtered[df_filtered['type'] == 'TV Show']
 
 # --- Main Layout with Columns ---
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -71,7 +76,7 @@ with col1:
                 color="#ff6f61", ax=ax_movie_genres)
     ax_movie_genres.set_title('Top 10 Movie Genres')
     labels = [textwrap.fill(genre, 15) for genre, _ in movie_genres]
-    ax_movie_genres.set_xticklabels(labels, rotation=45, ha='right')
+    ax_movie_genres.set_xticklabels(labels, rotation=90, ha='center')
     plt.tight_layout()
     st.pyplot(fig_movie_genres)
 
@@ -83,7 +88,7 @@ with col1:
                 color= "#6b5b95", ax=ax_tv_genres)
     ax_tv_genres.set_title('Top 10 TV Show Genres')
     labels = [textwrap.fill(genre, 15) for genre, _ in tv_genres]
-    ax_tv_genres.set_xticklabels(labels, rotation=45, ha='right')
+    ax_tv_genres.set_xticklabels(labels, rotation=90, ha='center')
     plt.tight_layout()
     st.pyplot(fig_tv_genres)
 
@@ -123,13 +128,13 @@ with col2:
         sns.barplot(x=[genre for genre, _ in us_genres], y=[count for _, count in us_genres], color="lightblue", ax=ax_us_genres)
         ax_us_genres.set_title('Top 10 Genres in the US')
         labels = [textwrap.fill(genre, 15) for genre, _ in us_genres]
-        ax_us_genres.set_xticklabels(labels, rotation=45, ha='right')
+        ax_us_genres.set_xticklabels(labels, rotation=90, ha='center')
         plt.tight_layout()
         st.pyplot(fig_us_genres)
     else:
         st.info("No data available for the United States in the selected year.")
 
-# Column 3: Temporal Analysis and Ratings
+# Column 3: Analysis and Ratings
 with col3:
     st.header("Analysis & Ratings")
     st.subheader("Titles Added Per Year")
@@ -152,12 +157,15 @@ with col3:
 
     st.subheader("Avg Movie Duration by Genre (Top 5)")
     fig_duration, ax_duration = plt.subplots(figsize=(8, 5))
-    sns.barplot(x='listed_in', y='duration_minutes', data=genre_duration, color='orange', ax=ax_duration)
+
+    # Use plot for line graph instead of sns.barplot
+    ax_duration.plot(genre_duration['listed_in'], genre_duration['duration_minutes'], marker='o', linestyle='-', color='orange') 
+
     ax_duration.set_title('Avg Movie Duration by Genre (Top 5)')
     ax_duration.set_xlabel('Genre')
     ax_duration.set_ylabel('Average Duration (minutes)')
     labels = [textwrap.fill(genre, 10) for genre in genre_duration['listed_in']]
-    ax_duration.set_xticklabels(labels, rotation=45, ha='right')
+    ax_duration.set_xticklabels(labels, rotation=90, ha='center')
     plt.tight_layout()
     st.pyplot(fig_duration)
 
@@ -168,3 +176,5 @@ with col3:
     ax_ratings.set_ylabel('Count')
     plt.tight_layout()
     st.pyplot(fig_ratings)
+
+
