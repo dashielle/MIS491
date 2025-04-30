@@ -11,6 +11,7 @@ from collections import Counter
 import textwrap
 import pycountry
 import plotly.express as px
+import os
 
 # Add the title at the beginning of your script
 st.title("Netflix Content Analysis") 
